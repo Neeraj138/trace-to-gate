@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "rpi": {
+      "source": "humanlayer/skills",
+      "sourceType": "github",
+      "skillPath": "plugins/rpi/skills/rpi/SKILL.md",
+      "computedHash": "ef971aa874748568d1a506557a697dde5d8e9a3d455f4af10babe52225c2823d"
+    }
+  }
+}
