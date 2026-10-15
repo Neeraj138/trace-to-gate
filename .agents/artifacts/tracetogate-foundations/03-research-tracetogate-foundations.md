@@ -204,6 +204,13 @@ evaluate(simulation, task)
 
 **Tool errors.** No fault-injection feature was found. Errors occur naturally, as tool exceptions turned into `error=True` messages. Ten errors end a run as `too_many_errors`.
 
+**Replay and extension details** (added during the design step; read from source at `5ade54e`, verified):
+- `Environment.set_state()` (`environment.py` L293-411) re-executes **only mutating tools** from the message history. It skips read tools and unknown (hallucinated) tool names. Each tool declares `mutates_state` (`toolkit.py` `tool_mutates_state`, default `True`).
+- With `strict=True` (the default), replay **raises** when a replayed mutating tool returns content different from the recorded `ToolMessage`. `evaluate_simulation(..., strict_replay=True)` is the default (`evaluator.py` L96). Only `tau2 evaluate-trajs` uses `strict_replay=False` (`evaluate_trajectories.py` L133).
+- Consequence **(inference)**: a run whose recorded write-tool result was altered (for example, an injected error on a write that the real tool would accept) cannot be graded by the default evaluator. It either raises, or with `strict=False` it rebuilds a final state that differs from the live run.
+- `registry.register_domain(get_environment, name)` (`registry.py` L177) accepts any environment constructor. `build_environment()` (`runner/build.py` L41) resolves the domain name through this registry. A wrapped Retail environment can therefore be registered under a new domain name without changes to τ²-Bench.
+- All tool calls pass through `Environment.get_response(ToolCall)` → `make_tool_call()` → `ToolKitBase.use_tool()` (`environment.py` L142-185, L465-490). This is the single boundary for tool spans and for fault injection.
+
 #### Testing Patterns
 
 Not investigated (see §1).
