@@ -42,3 +42,27 @@ Running log of important decisions and context, newest last. Anyone (human or ag
   - **No drift tooling targets agent-behavior signals** or LLM noise floors. **No numeric release-gate standard exists.** The statistical guidance is paired, clustered SEs plus power analysis (Anthropic "error bars").
 - 10 open questions are recorded in the research doc (seed honoring, S3 access, task_issues, LiteLLM OTel output for tools, and others).
 - Status: awaiting user review before design.
+
+### 2026-10-15 — Step 3: Design (in progress)
+- The user approved the research. The design covers Pipeline A and Pipeline B.
+- **Approach (user approved):** A subagent drafts `04-design-discussion-…`. The main session then runs the interview, one design question (DQ) at a time.
+- The draft has 10 DQs with recommendations. The interview started at DQ1 (trace capture). The user has not answered DQ1 yet.
+- A learning page ("Agent Eval Basics") was published as a private HTML artifact. By user request, it is not in git.
+
+### 2026-10-19 — Research addendum during design
+- The user asked three questions before DQ1:
+  - Is Pipeline A generic or specific to τ²-Bench?
+  - Can LLM review replace human review?
+  - What type of reviewer does the failure taxonomy use?
+- The user also asked for research on how production systems use human review together with automation.
+- Four parallel research agents covered vendor platforms, company practice, research literature, and the failure taxonomy reviewer. A fifth agent merged their reports.
+- Output: `03a-research-addendum-production-trace-to-eval.md`. It does not change `03`.
+- Facts most likely to shape the design:
+  - **No primary source uses an LLM to replace human review of open-ended agent work.** Humans find new failure modes, write the labels that validate judges, and confirm promotion to a blocking suite.
+  - **Vendors store all traces, run judges on a sample, filter with rules, and send a capped stream to human queues.** Datadog makes datasets that its rules fill read-only.
+  - **No source automatically promotes an LLM-judged failure into a blocking regression suite.** An "auto-add as a non-blocking candidate" tier is an inference.
+  - **The taxonomy reviewer has layers:** L1 deterministic rules, L2 an LLM classifier with a fixed taxonomy and an "other" option, L3 a human for "other", low-confidence, conflict, and audit items, and L4 a human owner who approves taxonomy versions.
+  - **LLM labels with a fixed taxonomy are usable** (MAST κ 0.77). **Step localization is weak** (14–46%). One judge found 2 of 9 new defect patterns.
+  - **Pipeline A is generic in its stages.** τ²-Bench is specific at four adapter points: state evidence, the replay environment, ground truth, and fault injection.
+- The main session verified the source "How the Claude Code team does code review" (claude.dev, 2026-10-15).
+- Next: the user reviews the addendum, then a revised Pipeline A goes into `04` (mostly DQ6).
