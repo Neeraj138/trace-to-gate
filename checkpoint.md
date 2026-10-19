@@ -86,3 +86,14 @@ Running log of important decisions and context, newest last. Anyone (human or ag
 - New `04b-final-architecture-tracetogate-foundations.md` describes the full architecture. It has 11 mermaid diagrams, including one process-flow diagram for Pipeline A and one for Pipeline B.
 - Explainer `04a-dq4-explainer-where-data-lives.md` explains the storage rules behind DQ4.
 - Next: the outline step (`05-structure-outline-…`), after user approval.
+
+### 2026-10-19 — System design document rewritten for human readers
+- The user asked for one self-contained system design document that a reader with no context can understand.
+- The user asked for these changes:
+  - No references to other project documents.
+  - No scope sections.
+  - No "learning project" text.
+  - All services in the stack are described.
+- `04b-final-architecture-tracetogate-foundations.md` is now "TraceToGate System Design" (revision 2). It has 13 sections and appendices A–G. It has 13 mermaid diagrams, including a deployment view.
+- No design decision changed.
+- `README.md` now describes the project and links to the system design document.
