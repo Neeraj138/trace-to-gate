@@ -73,3 +73,16 @@ Running log of important decisions and context, newest last. Anyone (human or ag
 - `04` now has an adapter section. The Pipeline A core is generic. τ²-Bench connects at four adapters: state evidence, replay environment, ground truth, and fault injection.
 - The EvalCase sketch in DQ7 has a `tier` field.
 - The user asked for all open DQs on one page with an answer box. Answer page (private artifact, not in git): https://claude.ai/artifact/9r9vXRCrLFfquR82zbcktA. Claude reads the saved answers from its `answers` collection.
+
+### 2026-10-19 — Step 3: Design done
+- The user answered all design questions on the answer page. The user accepted every recommendation.
+- **DQ4 additions (user approved):**
+  - Part 2: an export step copies human labels from Langfuse to `datasets/labels/labels.jsonl`. The step only adds lines.
+  - Part 3: data is shared in three layers.
+    - Git holds the manifests, labels, taxonomy, gate reports, and a small demo sample.
+    - A versioned evidence snapshot goes to Hugging Face Datasets or a GitHub Release. A lock file in git holds its SHA-256.
+    - Rebuild scripts run the experiments again with the same seeds.
+- `04` is now `status: resolved`. All DQs are under "Resolved Design Questions".
+- New `04b-final-architecture-tracetogate-foundations.md` describes the full architecture. It has 11 mermaid diagrams, including one process-flow diagram for Pipeline A and one for Pipeline B.
+- Explainer `04a-dq4-explainer-where-data-lives.md` explains the storage rules behind DQ4.
+- Next: the outline step (`05-structure-outline-…`), after user approval.
