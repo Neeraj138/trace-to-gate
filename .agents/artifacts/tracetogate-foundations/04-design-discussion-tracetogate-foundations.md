@@ -13,7 +13,7 @@ repos:
 
 # Design Discussion: TraceToGate Foundations
 
-This document uses ASD-STE100 Simplified Technical English. Section numbers such as "R§2" refer to sections of `03-research-tracetogate-foundations.md`.
+This document uses ASD-STE100 Simplified Technical English. Section numbers such as "R§2" refer to sections of `03-research-tracetogate-foundations.md`. Section numbers such as "A§5" refer to sections of the addendum `03a-research-addendum-production-trace-to-eval.md`.
 
 ## Terms Used in This Document
 
@@ -188,6 +188,19 @@ trace-to-gate/
 ├── ttg/drift/        # window comparison experiments
 └── evidence/         # local evidence store (not in git, except dataset manifests)
 ```
+
+### The pipeline core is generic, and τ²-Bench sits behind four adapters
+
+The Pipeline A stages match the vendor and company pattern in the addendum (A§1, A§6). They do not depend on τ²-Bench. τ²-Bench connects to the core at four adapter points:
+
+| Adapter | τ²-Bench Retail implementation | Production implementation |
+|---|---|---|
+| State evidence | Hash and JSON diff of the in-memory DB per mutating tool call | DB rows, API audit logs, or a side-effect recorder |
+| Replay environment | Fresh DB from `db.json` and the LLM user simulator | Sandbox, mocked services, or recorded tool responses |
+| Ground truth | `reward_info`, gold DB hash, and the fault manifest | Human labels, user signals, and incident confirmation |
+| Fault injection | Wrapped Retail tools with fault profiles | Chaos tests or none |
+
+The outline step must keep these four adapters behind interfaces. Then the same core can run on another τ²-Bench domain or on production traces.
 
 ## Design Questions
 
@@ -364,6 +377,8 @@ grade(run)
 
 ### DQ6. How are failures detected, labelled, and checked for accuracy?
 
+> **Revised on 2026-10-19 after the research addendum (`03a`).** The user asked if an LLM can replace human review, and asked for a mix of automatic rules and human review. The revised design is in "DQ6 revision: layered reviewer and router" below. The promotion rule (Part 2) is resolved. See "Resolved Design Questions". The original options stay below for the record.
+
 **Question.** Which methods find failures, who decides the label, and how does the project measure detector and judge accuracy?
 
 **Options.**
@@ -394,6 +409,43 @@ grade(run)
 | Pipeline completeness check | Telemetry fault manifest (DQ5 option C) | Detection rate per pipeline fault kind |
 
 Report TPR and TNR separately. Raw agreement misleads when failures are rare (R§11). Reported failure rates from a judge use the Rogan-Gladen correction when TPR + TNR − 1 is not close to 0 (R§11).
+
+#### DQ6 revision: layered reviewer and router
+
+The research addendum (A§) shows four facts:
+
+- No primary source lets an LLM replace human review of open-ended agent work (A§2, A§3).
+- Vendors run rules on all traces, run judges on a sample, and send a capped stream to human queues (A§1).
+- An LLM labeller with a fixed taxonomy reaches κ 0.77 (MAST). Step localization stays at 14–46% (A§3, A§4).
+- No source promotes an LLM-judged failure into a blocking suite with no human (A§5).
+
+**Reviewer layers (recommendation).**
+
+| Layer | Reviewer | Job | Accuracy check |
+|---|---|---|---|
+| L1 | Deterministic rules | Schema error, unknown ID, write without confirmation, duplicate write, second modify, state-diff checks, τ²-Bench reward = 0. A rule that fires wins over the LLM label. | TPR and TNR against the fault manifest and τ²-Bench reward |
+| L2 | LLM classifier | One primary label for the first failure. It uses the fixed taxonomy, few-shot examples, the L1 evidence, and an `other` option. It also gives a confidence value. | TPR, TNR, and κ per failure mode, on a frozen set of human labels |
+| L3 | Human reviewer | Labels `other` items, low-confidence items, conflicts, suspected simulator faults, and the audit sample. | Agreement between two reviewers on a sample |
+| L4 | Human taxonomy owner | Builds the first taxonomy by open coding and axial coding on about 100 failing traces. Approves each new taxonomy version, with a map from old codes to new codes. | Saturation: no new mode in the last 20 traces |
+
+**Router (recommendation).**
+
+```text
+route(run)
+  if all L1 checks pass and reward == 1 and no judge flag     -> AUTO_REJECT   (no case)
+  if (L1 hard evidence or validated L2 judge with high confidence on a known mode)
+     and failure reproduces on v1 in >= 2 of 4 trials          -> AUTO_CANDIDATE
+  else                                                         -> HUMAN_QUEUE
+  also: a random audit sample from AUTO_REJECT and AUTO_CANDIDATE -> HUMAN_QUEUE
+```
+
+- `HUMAN_QUEUE` gets `other` labels, new clusters, low-confidence labels, conflicts between rule, judge, and reward, and suspected simulator faults or task defects.
+- An L2 judge is "validated" only after it passes a TPR and TNR threshold on held-out human labels. Until then, the router sends its items to `HUMAN_QUEUE`.
+- At the start, no taxonomy and no validated judge exist. So the first failing traces all go to `HUMAN_QUEUE`. The automatic share grows as judges pass validation.
+- Auto-accept uses a stricter threshold than auto-reject, because a false pass hides a failure (A§5, inference).
+- Human labels go back into judge calibration and router thresholds. The project reports the automatic share and the audit error rate per lane.
+
+**Dataset tiers.** The dataset has two tiers: `candidate` (non-blocking) and `blocking`. The promotion rule is resolved (see "Resolved Design Questions"). Pipeline B reports candidate results but does not use them for FAIL.
 
 ### DQ7. What does an eval case contain, and what does "replayable" mean?
 
@@ -436,6 +488,7 @@ EvalCase
   checks: outcome (gold DB hash or expected state diff)
           behavior (rule ids, judge ids + judge versions)
   validation: reproduced_on_v1 = c/n trials, gold_path_passes = true
+  tier:   candidate | blocking, promoted_by (rule | human), promoted_at
 ```
 
 A case is **replayable** when all three conditions are true:
@@ -551,6 +604,13 @@ Every rule writes its reason and links to the source traces into the gate report
 
 - **Decision:** This design covers Pipeline A and Pipeline B and their connection.
 - **Rationale:** The value of Pipeline A is visible only when Pipeline B uses its dataset to make a release decision. Pipeline B runs also feed new traces back into Pipeline A.
+
+### DQ6 Part 2: promotion from the candidate tier to the blocking suite (user decision, 2026-10-19)
+
+- **Decision (option B):** A case moves from `candidate` to `blocking` automatically only when two conditions are true. First, a deterministic L1 rule found the failure. Second, the failure reproduces on v1 in at least 2 of 4 trials. All other cases need a human to confirm the promotion.
+- **Rationale:** L1 rule evidence is exact and can be measured against the fault manifest. LLM-judged failures stay human-gated, which matches all sources in the addendum (A§5). The rule gives more automation than the industry default and tests whether automatic promotion is safe.
+- **Note:** No source uses this rule. It is a project research choice. The project measures it with an audit sample of auto-promoted cases.
+- **Alternatives set aside:** A: a human confirms every promotion (the industry default, less automation). C: all candidates promote automatically, with an audit after promotion (highest risk of a bad case in the gate).
 
 ## Patterns to Follow
 

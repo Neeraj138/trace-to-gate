@@ -66,3 +66,10 @@ Running log of important decisions and context, newest last. Anyone (human or ag
   - **Pipeline A is generic in its stages.** τ²-Bench is specific at four adapter points: state evidence, the replay environment, ground truth, and fault injection.
 - The main session verified the source "How the Claude Code team does code review" (claude.dev, 2026-10-15).
 - Next: the user reviews the addendum, then a revised Pipeline A goes into `04` (mostly DQ6).
+
+### 2026-10-19 — Design: DQ6 revised, promotion rule decided
+- **Decision (user, option B):** A case moves from the `candidate` tier to the `blocking` suite automatically only when an L1 rule found the failure and the failure reproduces on v1 in at least 2 of 4 trials. A human confirms all other promotions.
+- `04` now has a "DQ6 revision" section: reviewer layers L1–L4 and a router with the lanes AUTO_REJECT, AUTO_CANDIDATE, and HUMAN_QUEUE, plus a random audit sample.
+- `04` now has an adapter section. The Pipeline A core is generic. τ²-Bench connects at four adapters: state evidence, replay environment, ground truth, and fault injection.
+- The EvalCase sketch in DQ7 has a `tier` field.
+- The user asked for all open DQs on one page with an answer box. Answer page (private artifact, not in git): https://claude.ai/artifact/9r9vXRCrLFfquR82zbcktA. Claude reads the saved answers from its `answers` collection.
