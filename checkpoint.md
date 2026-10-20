@@ -97,3 +97,20 @@ Running log of important decisions and context, newest last. Anyone (human or ag
 - `04b-final-architecture-tracetogate-foundations.md` is now "TraceToGate System Design" (revision 2). It has 13 sections and appendices A–G. It has 13 mermaid diagrams, including a deployment view.
 - No design decision changed.
 - `README.md` now describes the project and links to the system design document.
+
+### 2026-10-20 — Decision-model assessment and known-unknowns review (proposals)
+- The user asked for two things:
+  - Research on decision models such as Jev for Pipeline A ("don't add them for the sake of adding them").
+  - A known-unknowns review of the design.
+- `04c-decision-models-assessment.md`:
+  - Jev (TypeSafe AI) is a hosted yes/no and choice model at $0.042 per 1M input tokens. It has a 32k-token limit per question. It cannot be fine-tuned on customer data. Verified on docs.typesafe.ai/models.
+  - Verdict: do not use Jev as the L2 classifier. It is an optional experiment only for short implicit-signal checks.
+  - The real gap is judge calibration (calibration error, thresholds per lane), and it applies to any judge.
+- `04d-known-unknowns-review.md` lists 30 gaps, a pre-mortem, 5 spikes, and 2 pilots. The top gaps are:
+  - Pipeline A can see the answer key (production mode).
+  - Reward = 0 counts as hard evidence for automatic promotion.
+  - τ²-Bench grading replays through our wrapper (`environment.py` L390) and retries up to 3 times (`config.py` L40). Verified in the source.
+  - Three gate rules are unclear or unsafe.
+  - The power claim is too optimistic: 13–18 points on 40 tasks.
+  - The design has no rule for the task split or the seeds.
+- Status: proposals only. The system design document is unchanged until the user chooses which changes to accept.
