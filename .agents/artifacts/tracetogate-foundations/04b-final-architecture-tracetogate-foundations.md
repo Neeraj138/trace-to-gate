@@ -53,7 +53,7 @@ TraceToGate closes both gaps with two pipelines:
 - **Pipeline A (Trace-to-Eval)** reads the traces of agent runs and finds failures. It turns each verified failure into a test, and it collects the tests in a versioned regression dataset.
 - **Pipeline B (Replay and Release Gate)** runs v1 and v2 on that dataset and on a fixed set of benchmark tasks. It compares the two versions with error bars and writes a gate report that says PASS, FAIL, or REVIEW.
 
-A third, smaller part, the **drift experiments**, checks if we can see a change in agent behavior between two periods of runs.
+A third, smaller part, the **drift experiments**, checks if we can detect a change in the behavior of one agent version between two periods of runs, when nobody released a new version. The cause can be the model (a silent provider update), the input (a different task mix or customer persona), or the environment (more tool faults).
 
 ```mermaid
 flowchart LR
@@ -610,13 +610,15 @@ We define each agent version by a version string, a model, a prompt hash, and a 
 
 **In short:** We test drift detection on runs where we caused the change ourselves, so we know when an alarm is right.
 
-We make two windows of runs. The second window has one known change: the task mix, the fault rate, the customer persona, or a silent model change. A/A windows (same setup, new seeds) show how much the signals move from noise alone.
+We make two windows of runs. The agent version is the same in both windows. The second window has one known change: the task mix, the fault rate, the customer persona, or a silent model change. A/A windows (same setup, new seeds) show how much the signals move from noise alone.
 
 We watch these signals:
 
 - the mix of tools used and the reasons that runs end (χ² test or Jensen-Shannon divergence),
 - trajectory length and latency (Kolmogorov-Smirnov test),
 - the failure rate (two-proportion test).
+
+A drift alarm tells us that the behavior changed. It does not tell us the cause. A person finds the cause in the traces.
 
 We watch many signals at once, so we correct for multiple testing. We build this part only after the first gate works.
 

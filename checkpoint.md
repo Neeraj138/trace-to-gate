@@ -114,3 +114,9 @@ Running log of important decisions and context, newest last. Anyone (human or ag
   - The power claim is too optimistic: 13–18 points on 40 tasks.
   - The design has no rule for the task split or the seeds.
 - Status: proposals only. The system design document is unchanged until the user chooses which changes to accept.
+
+### 2026-11-08 — Drift wording fix
+- The user asked if drift means agent behavior or model behavior.
+- Answer: drift is a change in the behavior of one agent version over time. The cause can be the model (silent provider update), the input (task mix, persona), or the environment (tool faults). Model drift is one cause of four.
+- `04b` intro sentence and section 6.4 now say this.
+- The "Agent Eval Basics" artifact (not in git) has a longer drift section.
